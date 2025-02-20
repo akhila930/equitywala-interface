@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Management - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="location.href='{{ url_for('dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Feedback Management</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="feedback-content">
+            <!-- Tabs -->
+            <div class="feedback-tabs">
+                <button class="tab-btn active" onclick="showTab('employee')">Employee Feedback</button>
+                <button class="tab-btn" onclick="showTab('client')">Client Feedback</button>
+            </div>
+
+            <!-- Employee Feedback Section -->
+            <div id="employee-feedback" class="tab-content active">
+                <div class="section-header">
+                    <h2>Employee Feedback</h2>
+                    <button onclick="showEmployeeFeedbackModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">rate_review</span>
+                        Give Feedback
+                    </button>
+                </div>
+
+                <!-- Employee Feedback Tabs -->
+                <div class="feedback-subtabs">
+                    <button class="subtab-btn active" onclick="showSubTab('given')">Given Feedback</button>
+                    <button class="subtab-btn" onclick="showSubTab('received')">Received Feedback</button>
+                </div>
+
+                <!-- Given Feedback -->
+                <div id="given-feedback" class="subtab-content active">
+                    <div class="feedback-grid">
+                        {% for feedback in given_feedback %}
+                        <div class="feedback-card">
+                            <div class="feedback-header">
+                                <h3>{{ feedback.employee.name }}</h3>
+                                <span class="feedback-type">{{ feedback.feedback_type }}</span>
+                            </div>
+                            <div class="rating">
+                                {% for i in range(5) %}
+                                <span class="material-symbols-outlined">
+                                    {% if i < feedback.rating %}star{% else %}star_outline{% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            <p class="comments">{{ feedback.comments }}</p>
+                            <div class="feedback-meta">
+                                <span class="date">{{ feedback.created_date.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Received Feedback -->
+                <div id="received-feedback" class="subtab-content">
+                    <div class="feedback-grid" id="received-feedback-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Feedback Section -->
+            <div id="client-feedback" class="tab-content">
+                <div class="section-header">
+                    <h2>Client Feedback Management</h2>
+                    <button onclick="showGenerateLinkModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">add_link</span>
+                        Generate Feedback Link
+                    </button>
+                </div>
+
+                <!-- Pending Feedback Links -->
+                <div class="section-subheader">
+                    <h3>Pending Feedback Links</h3>
+                </div>
+                <div class="feedback-grid">
+                    {% for link in pending_feedback_links %}
+                    <div class="feedback-card pending-link">
+                        <div class="feedback-header">
+                            <h3>{{ link.client_name }}</h3>
+                            <span class="feedback-type">Pending</span>
+                        </div>
+                        <div class="feedback-meta">
+                            <span class="client-email">{{ link.client_email }}</span>
+                            <button onclick="copyFeedbackLink('{{ link.feedback_link_id }}')" class="icon-btn">
+                                <span class="material-symbols-outlined">content_copy</span>
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Submitted Feedback -->
+                <div class="section-subheader">
+                    <h3>Submitted Feedback</h3>
+                </div>
+                <div class="feedback-grid">
+                    {% for feedback in client_feedback %}
+                    <div class="feedback-card">
+                        <div class="feedback-header">
+                            <h3>{{ feedback.client_name }}</h3>
+                            <span class="feedback-date">{{ feedback.created_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="rating">
+                            {% for i in range(5) %}
+                            <span class="material-symbols-outlined">
+                                {% if i < feedback.rating %}star{% else %}star_outline{% endif %}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        <p class="comments">{{ feedback.comments }}</p>
+                        <div class="feedback-meta">
+                            <span class="client-email">{{ feedback.client_email }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Feedback Modal -->
+        <div id="employee-feedback-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeEmployeeFeedbackModal()">&times;</span>
+                <h2>Give Employee Feedback</h2>
+                <form action="{{ url_for('submit_employee_feedback') }}" method="POST" class="feedback-form">
+                    <div class="form-group">
+                        <label for="employee_id">Select Employee</label>
+                        <select id="employee_id" name="employee_id" required>
+                            <option value="">Select an employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback_type">Feedback Type</label>
+                        <select id="feedback_type" name="feedback_type" required>
+                            <option value="manager">Manager Review</option>
+                            <option value="peer">Peer Review</option>
+                            <option value="self">Self Assessment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rating</label>
+                        <div class="rating-input">
+                            {% for i in range(5) %}
+                            <input type="radio" id="star{{ 5-i }}" name="rating" value="{{ 5-i }}" required>
+                            <label for="star{{ 5-i }}">
+                                <span class="material-symbols-outlined">star</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="comments">Comments</label>
+                        <textarea id="comments" name="comments" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="primary-btn">Submit Feedback</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Generate Feedback Link Modal -->
+        <div id="generate-link-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideGenerateLinkModal()">&times;</span>
+                <h2>Generate Client Feedback Link</h2>
+                <form id="generate-link-form" onsubmit="generateFeedbackLink(event)">
+                    <div class="form-group">
+                        <label for="client-name">Client Name</label>
+                        <input type="text" id="client-name" name="client_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-email">Client Email</label>
+                        <input type="email" id="client-email" name="client_email" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Generate Link</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .feedback-content {
+            padding: 20px;
+        }
+        .feedback-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .feedback-subtabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .tab-btn, .subtab-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        .tab-btn.active, .subtab-btn.active {
+            background: #007bff;
+            color: white;
+        }
+        .tab-content, .subtab-content {
+            display: none;
+        }
+        .tab-content.active, .subtab-content.active {
+            display: block;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feedback-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .feedback-type {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .rating {
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+        .comments {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .feedback-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 5px;
+        }
+        .rating-input input {
+            display: none;
+        }
+        .rating-input label {
+            cursor: pointer;
+            color: #ddd;
+        }
+        .rating-input input:checked ~ label {
+            color: #ffc107;
+        }
+        .rating-input label:hover,
+        .rating-input label:hover ~ label {
+            color: #ffc107;
+        }
+        .link-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .link-container input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .no-feedback {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #6c757d;
+        }
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 8px;
+            color: #856404;
+        }
+        .section-subheader {
+            margin: 20px 0 10px 0;
+        }
+        .section-subheader h3 {
+            color: #495057;
+            font-size: 1.2em;
+        }
+        .pending-link {
+            background: #f8f9fa;
+        }
+        .secondary-btn {
+            padding: 8px 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .secondary-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName + '-feedback').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showSubTab(tabName) {
+            document.querySelectorAll('.subtab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.subtab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName + '-feedback').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showEmployeeFeedbackModal() {
+            document.getElementById('employee-feedback-modal').style.display = 'block';
+        }
+
+        function closeEmployeeFeedbackModal() {
+            document.getElementById('employee-feedback-modal').style.display = 'none';
+        }
+
+        function showGenerateLinkModal() {
+            document.getElementById('generate-link-modal').style.display = 'block';
+        }
+
+        function hideGenerateLinkModal() {
+            document.getElementById('generate-link-modal').style.display = 'none';
+        }
+
+        function generateFeedbackLink(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            fetch('/generate-client-feedback-link', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const link = window.location.origin + '/client-feedback/' + data.link_id;
+                    alert('Feedback link generated: ' + link);
+                    hideGenerateLinkModal();
+                    location.reload();
+                } else {
+                    alert('Error generating feedback link: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error generating feedback link');
+            });
+        }
+
+        function copyFeedbackLink(linkId) {
+            const link = window.location.origin + '/client-feedback/' + linkId;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Feedback link copied to clipboard!');
+            }).catch(err => {
+                console.error('Error copying link:', err);
+                alert('Error copying link to clipboard');
+            });
+        }
+
+        // Load received feedback when tab is clicked
+        document.querySelector('button[onclick="showSubTab(\'received\')"]').addEventListener('click', function() {
+            const employeeId = {{ session.get('user_id', 0) }};
+            const grid = document.getElementById('received-feedback-grid');
+            grid.innerHTML = '<div class="loading">Loading feedback...</div>';
+
+            fetch(`/get-employee-feedback/${employeeId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(feedback => {
+                    if (feedback.length === 0) {
+                        grid.innerHTML = '<div class="no-feedback">No feedback received yet.</div>';
+                        return;
+                    }
+                    
+                    const feedbackHtml = feedback.map(f => {
+                        const stars = Array(5).fill(0).map((_, i) => 
+                            `<span class="material-symbols-outlined">
+                                ${i < f.rating ? 'star' : 'star_outline'}
+                            </span>`
+                        ).join('');
+                        
+                        return `
+                            <div class="feedback-card">
+                                <div class="feedback-header">
+                                    <h3>${f.reviewer_name}</h3>
+                                    <span class="feedback-type">${f.feedback_type}</span>
+                                </div>
+                                <div class="rating">
+                                    ${stars}
+                                </div>
+                                <p class="comments">${f.comments}</p>
+                                <div class="feedback-meta">
+                                    <span class="date">${f.created_date}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    grid.innerHTML = feedbackHtml;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    grid.innerHTML = '<div class="error-message">Error loading feedback. Please try again.</div>';
+                });
+        });
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Candidate - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="location.href='{{ url_for('recruitment_dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Add New Candidate</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <div class="form-card">
+                <h2>Add New Candidate</h2>
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form method="POST" class="candidate-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="position">Position Applied For</label>
+                        <input type="text" id="position" name="position" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="experience">Experience (Years)</label>
+                        <input type="number" id="experience" name="experience" step="0.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="source">Source</label>
+                        <select id="source" name="source" required>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Job Portal">Job Portal</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Company Website">Company Website</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" required>
+                            <option value="Applied">Applied</option>
+                            <option value="Screening">Screening</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Selected">Selected</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resume">Resume</label>
+                        <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" onclick="location.href='{{ url_for('recruitment_dashboard') }}'" class="secondary-btn">Cancel</button>
+                        <button type="submit" class="primary-btn">Add Candidate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

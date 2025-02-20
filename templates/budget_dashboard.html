@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Management - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="window.location.href='{{ url_for('dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Budget Management</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="budget-dashboard-content">
+            <!-- Overview Section -->
+            <div class="section">
+                <div class="budget-overview">
+                    <div class="overview-card total-budget">
+                        <span class="material-symbols-outlined">account_balance</span>
+                        <h3>Total Budget</h3>
+                        <p class="amount">₹{{ "%.2f"|format(total_budget) }}</p>
+                    </div>
+                    <div class="overview-card total-spent">
+                        <span class="material-symbols-outlined">payments</span>
+                        <h3>Total Spent</h3>
+                        <p class="amount">₹{{ "%.2f"|format(total_spent) }}</p>
+                    </div>
+                    <div class="overview-card remaining-budget">
+                        <span class="material-symbols-outlined">savings</span>
+                        <h3>Remaining</h3>
+                        <p class="amount">₹{{ "%.2f"|format(total_budget - total_spent) }}</p>
+                    </div>
+                </div>
+                <div class="budget-chart">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Department Management Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Department Budgets</h2>
+                    <button onclick="showAddDepartmentModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        Add Department
+                    </button>
+                </div>
+
+                <div class="department-grid">
+                    {% for dept in departments %}
+                    {% set dept_expenses = dept.expenses|sum(attribute='amount') %}
+                    <div class="department-card">
+                        <div class="department-info">
+                            <h3>{{ dept.name }}</h3>
+                            <p class="budget">Budget: ₹{{ "%.2f"|format(dept.budget) }}</p>
+                            <p class="spent">Spent: ₹{{ "%.2f"|format(dept_expenses) }}</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ (dept_expenses/dept.budget*100) if dept.budget > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="department-actions">
+                            <button onclick="editDepartment('{{ dept.id }}')" class="action-btn edit-btn">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button onclick="deleteDepartment('{{ dept.id }}')" class="action-btn delete-btn">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Expense Management Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Expenses</h2>
+                    <button onclick="showAddExpenseModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        Add Expense
+                    </button>
+                </div>
+
+                <div class="expense-list">
+                    {% for expense in expenses %}
+                    <div class="expense-card">
+                        <div class="expense-info">
+                            <h3>{{ expense.description }}</h3>
+                            <p class="amount">₹{{ "%.2f"|format(expense.amount) }}</p>
+                            <p class="department">{{ expense.department.name }}</p>
+                            <p class="date">{{ expense.date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="expense-actions">
+                            {% if expense.receipt_path %}
+                            <a href="{{ url_for('view_receipt', expense_id=expense.id) }}" target="_blank" class="action-btn view-btn">
+                                <span class="material-symbols-outlined">receipt_long</span>
+                            </a>
+                            {% endif %}
+                            <button onclick="editExpense('{{ expense.id }}')" class="action-btn edit-btn">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button onclick="deleteExpense('{{ expense.id }}')" class="action-btn delete-btn">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Department Modal -->
+        <div id="add-department-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddDepartmentModal()">&times;</span>
+                <h2>Add Department</h2>
+                <form id="department-form" method="POST" action="{{ url_for('add_department') }}">
+                    <div class="form-group">
+                        <label for="department-name">Department Name</label>
+                        <input type="text" id="department-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="department-budget">Budget (₹)</label>
+                        <input type="number" id="department-budget" name="budget" step="0.01" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Department</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Expense Modal -->
+        <div id="add-expense-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddExpenseModal()">&times;</span>
+                <h2>Add New Expense</h2>
+                <form id="expense-form" action="{{ url_for('add_expense') }}" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="expense_description">Description</label>
+                        <input type="text" id="expense_description" name="description" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_amount">Amount</label>
+                        <input type="number" id="expense_amount" name="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_department">Department</label>
+                        <select id="expense_department" name="department_id" required>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_date">Date</label>
+                        <input type="date" id="expense_date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_receipt">Receipt</label>
+                        <input type="file" id="expense_receipt" name="receipt" accept="image/*,application/pdf">
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_notes">Notes</label>
+                        <textarea id="expense_notes" name="notes"></textarea>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Expense</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Department functions
+        function editDepartment(deptId) {
+            fetch(`/get-department/${deptId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('department-name').value = data.name;
+                    document.getElementById('department-budget').value = data.budget;
+                    document.getElementById('department-form').action = `/update-department/${deptId}`;
+                    document.getElementById('add-department-modal').querySelector('h2').textContent = 'Edit Department';
+                    showAddDepartmentModal();
+                });
+        }
+
+        function deleteDepartment(deptId) {
+            if (confirm('Are you sure you want to delete this department?')) {
+                fetch(`/delete-department/${deptId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        // Expense functions
+        function editExpense(expenseId) {
+            fetch(`/get-expense/${expenseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('expense_description').value = data.description;
+                    document.getElementById('expense_amount').value = data.amount;
+                    document.getElementById('expense_department').value = data.department_id;
+                    document.getElementById('expense_date').value = data.date;
+                    document.getElementById('expense-form').action = `/update-expense/${expenseId}`;
+                    document.getElementById('add-expense-modal').querySelector('h2').textContent = 'Edit Expense';
+                    showAddExpenseModal();
+                });
+        }
+
+        function deleteExpense(expenseId) {
+            if (confirm('Are you sure you want to delete this expense?')) {
+                fetch(`/delete-expense/${expenseId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        // Initialize expense chart
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        const monthlyExpenses = {{ monthly_expenses|tojson }};
+        
+        // Sort months chronologically
+        const sortedMonths = Object.keys(monthlyExpenses).sort();
+        const sortedExpenses = sortedMonths.map(month => monthlyExpenses[month]);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedMonths,
+                datasets: [
+                    {
+                        label: 'Monthly Expenses',
+                        data: sortedExpenses,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (₹)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '₹' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Modal functions
+        function showAddDepartmentModal() {
+            document.getElementById('add-department-modal').style.display = 'block';
+        }
+
+        function hideAddDepartmentModal() {
+            document.getElementById('add-department-modal').style.display = 'none';
+        }
+
+        function showAddExpenseModal() {
+            document.getElementById('add-expense-modal').style.display = 'block';
+        }
+
+        function hideAddExpenseModal() {
+            document.getElementById('add-expense-modal').style.display = 'none';
+        }
+
+        // View receipt
+        function viewReceipt(path) {
+            window.open(path, '_blank');
+        }
+    </script>
+</body>
+</html>

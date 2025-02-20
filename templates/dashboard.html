@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equitywala - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Equitywala Application</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="dashboard-content">
+            <div class="grid-container">
+                <a href="{{ url_for('employee_dashboard') }}" class="grid-item">
+                    <span class="material-symbols-outlined">group</span>
+                    <h3>Employee Dashboard</h3>
+                    <p>Manage employee profiles and performance metrics</p>
+                </a>
+                <a href="{{ url_for('recruitment_dashboard') }}" class="grid-item">
+                    <span class="material-symbols-outlined">person_search</span>
+                    <h3>Recruitment Management</h3>
+                    <p>Track hiring processes and candidate pipelines</p>
+                </a>
+                <a href="{{ url_for('social_media_dashboard') }}" class="grid-item">
+                    <span class="material-symbols-outlined">share</span>
+                    <h3>Social Media Management</h3>
+                    <p>Coordinate and monitor social media activities</p>
+                </a>
+                <a href="{{ url_for('budget_dashboard') }}" class="grid-item">
+                    <span class="material-symbols-outlined">account_balance</span>
+                    <h3>Budget Management</h3>
+                    <p>Track and control departmental expenses</p>
+                </a>
+                <a href="{{ url_for('document_finder') }}" class="grid-item">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <h3>Employee Document Finder</h3>
+                    <p>Quick access to employee documentation</p>
+                </a>
+                <a href="{{ url_for('feedback_management') }}" class="grid-item">
+                    <span class="material-symbols-outlined">feedback</span>
+                    <h3>Feedback Management</h3>
+                    <p>Collect and analyze employee feedback</p>
+                </a>
+                <a href="{{ url_for('leave_management') }}" class="grid-item">
+                    <span class="material-symbols-outlined">event_available</span>
+                    <h3>Leave Management</h3>
+                    <p>Track and approve employee leave requests</p>
+                </a>
+                <a href="{{ url_for('lead_client_management') }}" class="grid-item">
+                    <span class="material-symbols-outlined">people</span>
+                    <h3>Lead & Client Management</h3>
+                    <p>Monitor client relationships and leads</p>
+                </a>
+                <a href="{{ url_for('task_productivity') }}" class="grid-item">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <h3>Task & Productivity</h3>
+                    <p>Track team tasks and productivity metrics</p>
+                </a>
+                <a href="{{ url_for('salary_management') }}" class="grid-item">
+                    <span class="material-symbols-outlined">payments</span>
+                    <h3>Salary Management</h3>
+                    <p>Handle payroll and compensation</p>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="grid-item">
+                    <span class="material-symbols-outlined">analytics</span>
+                    <h3>Analytics & Reporting</h3>
+                    <p>Generate insights and performance reports</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

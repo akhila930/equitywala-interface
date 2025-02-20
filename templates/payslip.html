@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Payslip - {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Payslip</h4>
+                    <button onclick="window.print()" class="btn btn-light btn-sm">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Company Details -->
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="equitywala.com" style="height: 50px;">
+                        <h5 class="mt-2">Equitywala</h5>
+                    </div>
+
+                    <!-- Employee Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Employee Details</h6>
+                            <p class="mb-1"><strong>Name:</strong> {{ employee.name }}</p>
+                            <p class="mb-1"><strong>Employee ID:</strong> {{ employee.id }}</p>
+                            <p class="mb-1"><strong>Department:</strong> {{ employee.department or 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <h6 class="text-muted">Salary Details</h6>
+                            <p class="mb-1"><strong>Month:</strong> {{ salary_date.strftime('%B %Y') }}</p>
+                            <p class="mb-1"><strong>Status:</strong> 
+                                <span class="badge {% if salary.status == 'processed' %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ salary.status }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Salary Breakdown -->
+                    <div class="row">
+                        <!-- Earnings -->
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-3">Earnings</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Basic Pay</td>
+                                        <td class="text-end">₹{{ "%.2f"|format(salary.basic_pay) }}</td>
+                                    </tr>
+                                    {% for earning in earnings %}
+                                    <tr>
+                                        <td>{{ earning.name }}</td>
+                                        <td class="text-end">₹{{ "%.2f"|format(earning.amount) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="table-success">
+                                        <th>Total Earnings</th>
+                                        <th class="text-end">₹{{ "%.2f"|format(total_earnings) }}</th>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Deductions -->
+                        <div class="col-md-6">
+                            <h6 class="text-danger mb-3">Deductions</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    {% for deduction in deductions %}
+                                    <tr>
+                                        <td>{{ deduction.name }}</td>
+                                        <td class="text-end">₹{{ "%.2f"|format(deduction.amount) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="table-danger">
+                                        <th>Total Deductions</th>
+                                        <th class="text-end">₹{{ "%.2f"|format(total_deductions) }}</th>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Net Salary -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Net Salary</h5>
+                                        <h5 class="mb-0">₹{{ "%.2f"|format(net_salary) }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-4 pt-4 border-top">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Generated on: {{ datetime.now().strftime('%d-%m-%Y %H:%M:%S') }}</p>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <p class="text-muted mb-1">This is a computer-generated document</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn-print {
+        display: none;
+    }
+    .card {
+        border: none !important;
+    }
+    .card-header {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+}
+</style>
+{% endblock %}

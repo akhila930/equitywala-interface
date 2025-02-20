@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Add Employee{% endblock %}
+
+{% block styles %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+
+    .header-row {
+        background: white;
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .header-row a {
+        color: #333;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .header-row img {
+        height: 35px;
+        margin: 0 1rem;
+    }
+
+    .form-section {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: #333;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    }
+
+    .btn-submit {
+        background: #4a90e2;
+        border: none;
+        padding: 0.8rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        background: #357abd;
+        transform: translateY(-1px);
+    }
+
+    .alert {
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="header-row">
+        <a href="{{ url_for('employee_dashboard') }}">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Employee List</span>
+        </a>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo">
+        <h2 class="mb-0">Add New Employee</h2>
+    </div>
+
+    <div class="form-container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('add_employee') }}" class="needs-validation" novalidate>
+            <!-- Personal Information -->
+            <div class="form-section">
+                <h3 class="section-title">Personal Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                        <div class="invalid-feedback">Please enter employee's full name</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" required>
+                        <div class="invalid-feedback">Please enter a valid email address</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone" required>
+                        <div class="invalid-feedback">Please enter a valid phone number</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="dob" required>
+                        <div class="invalid-feedback">Please select date of birth</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employment Details -->
+            <div class="form-section">
+                <h3 class="section-title">Employment Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Role/Position</label>
+                        <input type="text" class="form-control" name="role" required>
+                        <div class="invalid-feedback">Please enter employee's role</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" name="department" required>
+                            <option value="">Select Department</option>
+                            <option value="IT">IT</option>
+                            <option value="HR">HR</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Operations">Operations</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a department</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Join Date</label>
+                        <input type="date" class="form-control" name="join_date" required>
+                        <div class="invalid-feedback">Please select join date</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Employee Type</label>
+                        <select class="form-select" name="employee_type" required>
+                            <option value="">Select Type</option>
+                            <option value="full-time">Full Time</option>
+                            <option value="part-time">Part Time</option>
+                            <option value="contract">Contract</option>
+                            <option value="intern">Intern</option>
+                        </select>
+                        <div class="invalid-feedback">Please select employee type</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Salary Information -->
+            <div class="form-section">
+                <h3 class="section-title">Salary Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Basic Salary</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" class="form-control" name="salary" required>
+                        </div>
+                        <div class="invalid-feedback">Please enter basic salary</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pay Frequency</label>
+                        <select class="form-select" name="pay_frequency" required>
+                            <option value="monthly">Monthly</option>
+                            <option value="bi-weekly">Bi-Weekly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                        <div class="invalid-feedback">Please select pay frequency</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-submit btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add Employee
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %} 

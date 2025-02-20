@@ -1,0 +1,1254 @@
+{% extends "base.html" %}
+
+{% block head %}
+<!-- Add required CSS libraries -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block title %}Employee Profile - {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="back-button-container" style="margin: 20px 0;">
+        <a href="{{ url_for('employee_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to Employee Dashboard
+        </a>
+    </div>
+    <div class="profile-header">
+        <div class="profile-info">
+            {% if employee.profile_photo %}
+            <img src="{{ url_for('static', filename=employee.profile_photo) }}" alt="Profile Photo" class="profile-photo">
+            {% else %}
+            <div class="profile-photo-placeholder">
+                {{ employee.name[0].upper() }}
+            </div>
+            {% endif %}
+            <div class="profile-details">
+                <h1>{{ employee.name }}</h1>
+                <div class="details-grid">
+                    <p><i class="fas fa-briefcase"></i> <strong>Role:</strong> {{ employee.role }}</p>
+                    <p><i class="fas fa-building"></i> <strong>Department:</strong> {{ employee.department }}</p>
+                    <p><i class="fas fa-envelope"></i> <strong>Email:</strong> {{ employee.email }}</p>
+                    <p><i class="fas fa-phone"></i> <strong>Phone:</strong> {{ employee.phone }}</p>
+                    <p><i class="fas fa-calendar-alt"></i> <strong>Join Date:</strong> {{ employee.join_date.strftime('%B %d, %Y') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="profile-metrics">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Productivity Score</h3>
+                <div class="score">{{ "%.1f"|format(productivity_score) }}%</div>
+                <div class="metric-info">Based on tasks & attendance</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-user-clock"></i></div>
+                <h3>Attendance</h3>
+                <div class="score">{{ "%.1f"|format(attendance_percentage) }}%</div>
+                <div class="metric-info">Current month</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-tabs">
+        <ul class="nav nav-pills" id="profileTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="tasks-tab" data-toggle="tab" href="#tasks" role="tab">
+                    <i class="fas fa-tasks"></i> Tasks
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="milestones-tab" data-toggle="tab" href="#milestones" role="tab">
+                    <i class="fas fa-flag"></i> Milestones
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="documents-tab" data-toggle="tab" href="#documents" role="tab">
+                    <i class="fas fa-file-alt"></i> Documents
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="attendance-tab" data-toggle="tab" href="#attendance" role="tab">
+                    <i class="fas fa-calendar-check"></i> Attendance
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content mt-4" id="profileTabContent">
+            <!-- Tasks Tab -->
+            <div class="tab-pane fade show active" id="tasks" role="tabpanel">
+                <div class="section-header">
+                    <div class="d-flex align-items-center">
+                        <h2><i class="fas fa-tasks"></i> Tasks</h2>
+                        <div class="task-filters ml-4">
+                            <button class="btn btn-outline-primary btn-sm active" data-filter="all">All</button>
+                            <button class="btn btn-outline-warning btn-sm" data-filter="pending">Pending</button>
+                            <button class="btn btn-outline-info btn-sm" data-filter="in-progress">In Progress</button>
+                            <button class="btn btn-outline-success btn-sm" data-filter="completed">Completed</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addTaskModal">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+                <div class="tasks-list">
+                    {% for task in tasks %}
+                    <div class="task-card" data-status="{{ task.status }}">
+                        <div class="task-header">
+                            <h3>{{ task.title }}</h3>
+                            <div class="task-badges">
+                                <span class="badge badge-{{ task.priority }}">{{ task.priority }}</span>
+                                <span class="badge badge-{{ task.status }}">{{ task.status }}</span>
+                            </div>
+                        </div>
+                        <p class="task-description">{{ task.description }}</p>
+                        <div class="task-footer">
+                            <span class="due-date">
+                                <i class="far fa-calendar-alt"></i>
+                                Due: {{ task.due_date.strftime('%B %d, %Y') }}
+                            </span>
+                            <div class="task-actions">
+                                <button class="btn btn-sm btn-info" onclick="editTask('{{ task.id }}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTask('{{ task.id }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="updateTaskStatus({{ task.id }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Milestones Tab -->
+            <div class="tab-pane fade" id="milestones" role="tabpanel">
+                <div class="section-header">
+                    <h2><i class="fas fa-flag"></i> Milestones</h2>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addMilestoneModal">
+                        <i class="fas fa-plus"></i> Add Milestone
+                    </button>
+                </div>
+                <div class="milestones-list">
+                    {% for milestone in milestones %}
+                    <div class="milestone-card">
+                        <div class="milestone-header">
+                            <h3>{{ milestone.title }}</h3>
+                            <div class="milestone-actions">
+                                <button class="btn btn-sm btn-info" onclick="editMilestone({{ milestone.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteMilestone({{ milestone.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="milestone-description">{{ milestone.description }}</p>
+                        <span class="milestone-date">
+                            <i class="far fa-calendar-alt"></i>
+                            {{ milestone.date.strftime('%B %d, %Y') }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div class="tab-pane fade" id="documents" role="tabpanel">
+                <div class="section-header">
+                    <div class="d-flex align-items-center">
+                        <h2><i class="fas fa-file-alt"></i> Documents</h2>
+                        <div class="document-filters ml-4">
+                            <button class="btn btn-outline-primary btn-sm active" data-filter="all">All</button>
+                            <button class="btn btn-outline-info btn-sm" data-filter="personal">Personal</button>
+                            <button class="btn btn-outline-success btn-sm" data-filter="company">Company</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#uploadDocumentModal">
+                        <i class="fas fa-upload"></i> Upload Document
+                    </button>
+                </div>
+                <div class="documents-section">
+                    <div class="documents-grid">
+                        {% for doc in personal_docs %}
+                        <div class="document-card" data-type="personal">
+                            <div class="doc-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="doc-info">
+                                <h4>{{ doc.name }}</h4>
+                                <p class="doc-meta">
+                                    <span><i class="far fa-calendar-alt"></i> {{ doc.uploaded_date.strftime('%B %d, %Y') }}</span>
+                                    <span class="badge badge-info">Personal</span>
+                                </p>
+                            </div>
+                            <div class="doc-actions">
+                                {% if doc.file_path.lower().endswith('.pdf') %}
+                                <a href="{{ url_for('view_document', document_id=doc.id) }}" class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('download_document', document_id=doc.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ doc.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% for doc in company_docs %}
+                        <div class="document-card" data-type="company">
+                            <div class="doc-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="doc-info">
+                                <h4>{{ doc.name }}</h4>
+                                <p class="doc-meta">
+                                    <span><i class="far fa-calendar-alt"></i> {{ doc.uploaded_date.strftime('%B %d, %Y') }}</span>
+                                    <span class="badge badge-success">Company</span>
+                                </p>
+                            </div>
+                            <div class="doc-actions">
+                                {% if doc.file_path.lower().endswith('.pdf') %}
+                                <a href="{{ url_for('view_document', document_id=doc.id) }}" class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('download_document', document_id=doc.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ doc.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Tab -->
+            <div class="tab-pane fade" id="attendance" role="tabpanel">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-check"></i> Attendance</h2>
+                    <div class="attendance-controls">
+                        <button class="btn btn-outline-primary" id="prevMonth">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="current-month mx-3">{{ current_month }}</span>
+                        <button class="btn btn-outline-primary" id="nextMonth">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="attendance-legend">
+                    <span class="legend-item present">
+                        <i class="fas fa-circle"></i> Present
+                    </span>
+                    <span class="legend-item absent">
+                        <i class="fas fa-circle"></i> Absent
+                    </span>
+                    <span class="legend-item half-day">
+                        <i class="fas fa-adjust"></i> Half Day
+                    </span>
+                    <span class="legend-item leave">
+                        <i class="fas fa-circle"></i> Leave
+                    </span>
+                </div>
+                <div class="attendance-calendar">
+                    <div class="calendar-header">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+                    <div class="calendar-grid">
+                        {% for day in calendar_days %}
+                        <div class="calendar-day {{ day.status }}" data-date="{{ day.date.strftime('%Y-%m-%d') }}">
+                            <span class="date">{{ day.date.strftime('%d') }}</span>
+                            <span class="status-icon">
+                                {% if day.status == 'present' %}
+                                <i class="fas fa-check"></i>
+                                {% elif day.status == 'absent' %}
+                                <i class="fas fa-times"></i>
+                                {% elif day.status == 'half-day' %}
+                                <i class="fas fa-adjust"></i>
+                                {% elif day.status == 'leave' %}
+                                <i class="fas fa-umbrella"></i>
+                                {% endif %}
+                            </span>
+                            <div class="attendance-actions">
+                                <button class="btn btn-xs btn-success" onclick="markAttendance('{{ day.date.strftime('%Y-%m-%d') }}', 'present')">P</button>
+                                <button class="btn btn-xs btn-warning" onclick="markAttendance('{{ day.date.strftime('%Y-%m-%d') }}', 'half-day')">H</button>
+                                <button class="btn btn-xs btn-danger" onclick="markAttendance('{{ day.date.strftime('%Y-%m-%d') }}', 'absent')">A</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Task</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ url_for('add_employee_task', employee_id=employee.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" class="form-control" name="due_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select class="form-control" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div class="modal fade" id="editTaskModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Task</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="editTaskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editTaskId" name="task_id">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" id="editTaskTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="editTaskDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" class="form-control" id="editTaskDueDate" name="due_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-control" id="editTaskStatus" name="status">
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select class="form-control" id="editTaskPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Milestone Modal -->
+<div class="modal fade" id="addMilestoneModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Milestone</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ url_for('add_milestone', employee_id=employee.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" class="form-control" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Milestone</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Milestone Modal -->
+<div class="modal fade" id="editMilestoneModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Milestone</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="editMilestoneForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editMilestoneId" name="milestone_id">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" id="editMilestoneTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="editMilestoneDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" class="form-control" id="editMilestoneDate" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ url_for('upload_document', employee_id=employee.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="doc_name">Document Name</label>
+                        <input type="text" class="form-control" id="doc_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_type">Document Type</label>
+                        <select class="form-control" id="doc_type" name="document_type">
+                            <option value="personal">Personal</option>
+                            <option value="company">Company</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_category">Category</label>
+                        <select class="form-control" id="doc_category" name="category_id">
+                            {% for category in document_categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_description">Description</label>
+                        <textarea class="form-control" id="doc_description" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_file">File</label>
+                        <input type="file" class="form-control-file" id="doc_file" name="document" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Container Spacing */
+.container {
+    max-width: 1400px;
+    padding: 2rem;
+}
+
+/* Profile Header */
+.profile-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 2.5rem;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.profile-info {
+    display: flex;
+    gap: 2rem;
+    flex: 2;
+}
+
+.profile-photo, .profile-photo-placeholder {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.profile-photo-placeholder {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+}
+
+.profile-details {
+    flex: 1;
+}
+
+.profile-details h1 {
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    font-size: 2.5rem;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.details-grid p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    color: #495057;
+}
+
+.details-grid p i {
+    color: #007bff;
+    width: 20px;
+}
+
+/* Metrics Cards */
+.profile-metrics {
+    display: flex;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+.metric-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.metric-icon {
+    font-size: 2rem;
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.metric-card h3 {
+    color: #495057;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.score {
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0.5rem 0;
+}
+
+.metric-info {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Tabs Navigation */
+.profile-tabs {
+    margin-top: 2rem;
+}
+
+.nav-pills {
+    margin-bottom: 2rem;
+    border-radius: 15px;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nav-pills .nav-link {
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    color: #495057;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-pills .nav-link i {
+    font-size: 1.2rem;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+}
+
+/* Content Sections */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.section-header h2 i {
+    color: #007bff;
+}
+
+/* Cards Grid Layout */
+.tasks-list, .milestones-list, .documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Card Styles */
+.task-card, .milestone-card, .document-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.task-card:hover, .milestone-card:hover, .document-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.task-header, .milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.task-header h3, .milestone-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.25rem;
+}
+
+.task-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.task-description, .milestone-description {
+    color: #495057;
+    margin: 1rem 0;
+    flex-grow: 1;
+}
+
+.task-footer, .milestone-date {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Calendar Styles */
+.attendance-calendar {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.75rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    padding: 0.75rem;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.calendar-day .date {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.attendance-actions {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.calendar-day:hover .attendance-actions {
+    opacity: 1;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-top: 15px;
+}
+
+.calendar-day {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    position: relative;
+    min-height: 80px;
+}
+
+.calendar-day .date {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+.calendar-day .status-icon {
+    display: block;
+    margin-top: 20px;
+    font-size: 1.2em;
+}
+
+.calendar-day .attendance-actions {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    display: none;
+}
+
+.calendar-day:hover .attendance-actions {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.calendar-day.present { background-color: #d4edda; }
+.calendar-day.absent { background-color: #f8d7da; }
+.calendar-day.half-day { background-color: #fff3cd; }
+.calendar-day.leave { background-color: #cce5ff; }
+
+.attendance-legend {
+    display: flex;
+    gap: 20px;
+    margin: 15px 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-item i {
+    font-size: 0.8em;
+}
+
+.legend-item.present i { color: #28a745; }
+.legend-item.absent i { color: #dc3545; }
+.legend-item.half-day i { color: #ffc107; }
+.legend-item.leave i { color: #007bff; }
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .profile-header {
+        flex-direction: column;
+    }
+    
+    .profile-metrics {
+        width: 100%;
+        margin-top: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .profile-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-metrics {
+        flex-direction: column;
+    }
+    
+    .metric-card {
+        width: 100%;
+    }
+    
+    .tasks-list, .milestones-list, .documents-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-pills {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+    
+    .nav-pills .nav-link {
+        white-space: nowrap;
+    }
+}
+
+.doc-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.doc-actions .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.doc-actions .btn i {
+    margin: 0;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<!-- Add required JavaScript libraries -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize Bootstrap tabs
+    $('#profileTabs a').on('click', function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
+
+    // Show first tab by default
+    $('#profileTabs a:first').tab('show');
+
+    // Task Filtering
+    $('.task-filters button').on('click', function() {
+        const filter = $(this).data('filter');
+        $('.task-card').each(function() {
+            if (filter === 'all' || $(this).data('status') === filter) {
+                $(this).fadeIn(300);
+            } else {
+                $(this).fadeOut(300);
+            }
+        });
+        
+        $('.task-filters button').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Document Filtering
+    $('.document-filters button').on('click', function() {
+        const filter = $(this).data('filter');
+        $('.document-card').each(function() {
+            if (filter === 'all' || $(this).data('type') === filter) {
+                $(this).fadeIn(300);
+            } else {
+                $(this).fadeOut(300);
+            }
+        });
+        
+        $('.document-filters button').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Edit Task form submission
+    $('#editTaskForm').on('submit', function(e) {
+        e.preventDefault();
+        const taskId = $('#editTaskId').val();
+        const formData = new FormData(this);
+        
+        fetch(`/employee/update-task/${taskId}`, {
+            method: 'POST',
+            body: new URLSearchParams(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                $('#editTaskModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Error updating task: ' + data.error);
+            }
+        });
+    });
+
+    // Edit Milestone form submission
+    $('#editMilestoneForm').on('submit', function(e) {
+        e.preventDefault();
+        const milestoneId = $('#editMilestoneId').val();
+        const formData = new FormData(this);
+        
+        fetch(`/edit-milestone/${milestoneId}`, {
+            method: 'POST',
+            body: new URLSearchParams(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                $('#editMilestoneModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Error updating milestone: ' + data.error);
+            }
+        });
+    });
+});
+
+// Task Management Functions
+function updateTaskStatus(taskId, status) {
+    fetch(`/employee/update-task/${taskId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `status=${status}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating task status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating task status');
+    });
+}
+
+function editTask(taskId) {
+    fetch(`/employee/get-task/${taskId}`)
+        .then(response => response.json())
+        .then(task => {
+            $('#editTaskId').val(taskId);
+            $('#editTaskTitle').val(task.title);
+            $('#editTaskDescription').val(task.description);
+            $('#editTaskDueDate').val(task.due_date);
+            $('#editTaskStatus').val(task.status);
+            $('#editTaskPriority').val(task.priority);
+            $('#editTaskModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading task details');
+        });
+}
+
+function deleteTask(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        fetch(`/employee/delete-task/${taskId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting task');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting task');
+        });
+    }
+}
+
+// Milestone Management Functions
+function editMilestone(milestoneId) {
+    fetch(`/get-milestone/${milestoneId}`)
+        .then(response => response.json())
+        .then(milestone => {
+            $('#editMilestoneId').val(milestoneId);
+            $('#editMilestoneTitle').val(milestone.title);
+            $('#editMilestoneDescription').val(milestone.description);
+            $('#editMilestoneDate').val(milestone.date);
+            $('#editMilestoneModal').modal('show');
+        });
+}
+
+function deleteMilestone(milestoneId) {
+    if (confirm('Are you sure you want to delete this milestone?')) {
+        fetch(`/delete-milestone/${milestoneId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting milestone');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting milestone');
+        });
+    }
+}
+
+// Attendance Management Functions
+function markAttendance(date, status) {
+    const employeeId = {{ employee.id }};
+    const formData = new FormData();
+    formData.append('date', date);
+    formData.append('status', status);
+    
+    fetch(`/add-attendance/${employeeId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error marking attendance: ' + data.error);
+        }
+    });
+}
+
+// Document Management Functions
+function deleteDocument(documentId) {
+    if (confirm('Are you sure you want to delete this document?')) {
+        fetch(`/delete-document/${documentId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting document: ' + data.error);
+            }
+        });
+    }
+}
+
+// Calendar Navigation
+let currentDate = new Date();
+
+function updateCalendar() {
+    fetch(`/get-attendance?employee_id={{ employee.id }}&month=${currentDate.getMonth() + 1}&year=${currentDate.getFullYear()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                $('.current-month').text(data.month);
+                updateCalendarDays(data.attendance);
+            }
+        });
+}
+
+function updateCalendarDays(attendanceData) {
+    const calendarGrid = $('.calendar-grid');
+    calendarGrid.empty();
+    
+    attendanceData.forEach(day => {
+        const dayDate = new Date(day.date);
+        const formattedDate = dayDate.toISOString().split('T')[0];  // Format as YYYY-MM-DD
+        const dayElement = $(`
+            <div class="calendar-day ${day.status}" data-date="${formattedDate}">
+                <span class="date">${dayDate.getDate()}</span>
+                <span class="status-icon">
+                    ${getStatusIcon(day.status)}
+                </span>
+                <div class="attendance-actions">
+                    <button class="btn btn-xs btn-success" onclick="markAttendance('${formattedDate}', 'present')">P</button>
+                    <button class="btn btn-xs btn-warning" onclick="markAttendance('${formattedDate}', 'half-day')">H</button>
+                    <button class="btn btn-xs btn-danger" onclick="markAttendance('${formattedDate}', 'absent')">A</button>
+                </div>
+            </div>
+        `);
+        calendarGrid.append(dayElement);
+    });
+}
+
+function getStatusIcon(status) {
+    switch (status) {
+        case 'present':
+            return '<i class="fas fa-check"></i>';
+        case 'absent':
+            return '<i class="fas fa-times"></i>';
+        case 'half-day':
+            return '<i class="fas fa-adjust"></i>';
+        case 'leave':
+            return '<i class="fas fa-umbrella"></i>';
+        default:
+            return '';
+    }
+}
+
+function markAttendance(date, status) {
+    const formData = new FormData();
+    formData.append('date', date);
+    formData.append('status', status);
+    
+    fetch(`/add-attendance/{{ employee.id }}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateCalendar();
+        } else {
+            alert('Error marking attendance: ' + data.error);
+        }
+    });
+}
+
+$('#prevMonth').click(function() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    updateCalendar();
+});
+
+$('#nextMonth').click(function() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    updateCalendar();
+});
+
+// Initialize calendar
+updateCalendar();
+</script>
+{% endblock %}

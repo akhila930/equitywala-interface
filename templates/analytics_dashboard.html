@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container-fluid {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            padding: 0;
+            margin-top: 2rem;
+        }
+
+        .analytics-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analytics-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .analytics-card h3 {
+            color: #1a1f36;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .analytics-card .material-symbols-outlined {
+            font-size: 24px;
+            color: #4f46e5;
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: left;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .stat-item:hover {
+            background: #f1f5f9;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1f36;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .trend-indicator {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend-up {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .trend-down {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .top-nav {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        .back-link {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #4f46e5;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #1a1f36;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 2rem;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-button:first-child {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .action-button:last-child {
+            background: #f8fafc;
+            color: #1a1f36;
+        }
+
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropbtn {
+            background: #f8fafc;
+            color: #1a1f36;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .dropbtn:hover {
+            background: #f1f5f9;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: white;
+            min-width: 160px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: #1a1f36;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-content a:hover {
+            background: #f8fafc;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-nav {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+                padding: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .action-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .loading {
+            position: relative;
+        }
+
+        .loading::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading .stat-value,
+        .loading .stat-label {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+         <div class="top-nav">
+            <div class="header">
+            <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="equitywala.com" class="logo">
+         </div>
+            <h1>Analytics Dashboard</h1>
+            <div class="dropdown">
+                <button class="dropbtn">{{ user_name }} ▼</button>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <main class="analytics-grid">
+            <!-- Task and Productivity -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">task_alt</span>
+                    Task and Productivity
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ total_tasks }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                5%
+                            </span>
+                        </div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ completed_tasks }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                8%
+                            </span>
+                        </div>
+                        <div class="stat-label">Completed Tasks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ pending_tasks }}</div>
+                        <div class="stat-label">Pending Tasks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ overdue_tasks }}
+                            <span class="trend-indicator trend-down">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_downward</span>
+                                3%
+                            </span>
+                        </div>
+                        <div class="stat-label">Overdue</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">group</span>
+                    Employees
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ total_employees }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                12%
+                            </span>
+                        </div>
+                        <div class="stat-label">Total Employees</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ total_roles }}</div>
+                        <div class="stat-label">Roles</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recruitment -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">person_add</span>
+                    Recruitment
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ candidates_applied }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                15%
+                            </span>
+                        </div>
+                        <div class="stat-label">Candidates Applied</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ selected_candidates }}</div>
+                        <div class="stat-label">Selected</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget and Finance -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">account_balance</span>
+                    Budget and Finance
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">₹{{ total_budget }}</div>
+                        <div class="stat-label">Total Budget</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            ₹{{ remaining_budget }}
+                            <span class="trend-indicator trend-down">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_downward</span>
+                                7%
+                            </span>
+                        </div>
+                        <div class="stat-label">Remaining</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">₹{{ recent_expenses }}</div>
+                        <div class="stat-label">Recent Expenses</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client and Lead -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">groups</span>
+                    Client and Lead
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ active_clients }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                10%
+                            </span>
+                        </div>
+                        <div class="stat-label">Active Clients</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ new_leads }}</div>
+                        <div class="stat-label">New Leads</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Media -->
+            <div class="analytics-card">
+                <h3>
+                    <span class="material-symbols-outlined">share</span>
+                    Social Media
+                </h3>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ total_campaigns }}</div>
+                        <div class="stat-label">Total Campaigns</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {{ scheduled_posts }}
+                            <span class="trend-indicator trend-up">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                20%
+                            </span>
+                        </div>
+                        <div class="stat-label">Scheduled Posts</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">₹{{ campaign_spend }}</div>
+                        <div class="stat-label">Campaign Spend</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="action-buttons">
+            <button class="action-button" onclick="exportToPDF()">
+                <span class="material-symbols-outlined">download</span>
+                Export as PDF
+            </button>
+            <button class="action-button" onclick="copyShareableLink()">
+                <span class="material-symbols-outlined">share</span>
+                Share Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.jsPDF = window.jspdf.jsPDF;
+
+        // Add loading state to cards
+        function addLoadingState(cardElement) {
+            cardElement.classList.add('loading');
+            setTimeout(() => {
+                cardElement.classList.remove('loading');
+            }, 1000);
+        }
+
+        // Add loading state when switching between views
+        document.querySelectorAll('.analytics-card').forEach(card => {
+            addLoadingState(card);
+        });
+
+        function exportToPDF() {
+            const element = document.querySelector('.analytics-grid');
+            const button = document.querySelector('.action-button');
+            button.textContent = 'Generating PDF...';
+            button.disabled = true;
+
+            html2canvas(element).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('analytics-dashboard.pdf');
+
+                button.textContent = 'Export as PDF';
+                button.disabled = false;
+            });
+        }
+
+        function copyShareableLink() {
+            const button = document.querySelector('.action-button:last-child');
+            const currentUrl = window.location.href;
+            
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Link Copied!';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

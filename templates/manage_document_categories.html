@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Document Categories - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <style>
+        .content-section {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        .form-section {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .list-section {
+            flex: 2;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .category-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .confidential-badge {
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .category-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .danger-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .danger-btn:hover {
+            background: #c82333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .primary-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .primary-btn:hover {
+            background: #0056b3;
+        }
+        .category-count {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="location.href='{{ url_for('document_finder') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Document Finder
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Manage Document Categories</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content-section">
+            <!-- Add Category Form -->
+            <div class="form-section">
+                <h2>Add New Category</h2>
+                <p>Create a new category for organizing documents. Mark as confidential if access should be restricted.</p>
+                <form action="{{ url_for('add_document_category') }}" method="POST" class="standard-form">
+                    <div class="form-group">
+                        <label for="name">Category Name:</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter category name">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="is_confidential" value="true" onchange="toggleAccessCode(this)">
+                            Is Confidential
+                        </label>
+                        <p style="font-size: 12px; color: #6c757d;">Check this if documents in this category require access code</p>
+                    </div>
+                    <div class="form-group" id="access-code-group" style="display: none;">
+                        <label for="access_code">Access Code:</label>
+                        <input type="text" id="access_code" name="access_code" placeholder="Enter access code">
+                        <p style="font-size: 12px; color: #6c757d;">This code will be required to access documents in this category</p>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Category</button>
+                </form>
+            </div>
+
+            <!-- Categories List -->
+            <div class="list-section">
+                <h2>Existing Categories</h2>
+                <p class="category-count">Total Categories: {{ categories|length }}</p>
+                <div class="categories-list">
+                    {% for category in categories %}
+                    <div class="category-card">
+                        <div class="category-info">
+                            <h3>{{ category.name }}</h3>
+                            {% if category.is_confidential %}
+                            <span class="confidential-badge">
+                                <span class="material-symbols-outlined">lock</span>
+                                Confidential
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="category-actions">
+                            <button onclick="deleteCategory({{ category.id }})" class="danger-btn" title="Delete Category">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p>No categories found. Add your first category using the form.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleAccessCode(checkbox) {
+            const accessCodeGroup = document.getElementById('access-code-group');
+            accessCodeGroup.style.display = checkbox.checked ? 'block' : 'none';
+            const accessCodeInput = document.getElementById('access_code');
+            accessCodeInput.required = checkbox.checked;
+        }
+
+        function deleteCategory(categoryId) {
+            if (confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+                fetch(`/delete-document-category/${categoryId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting category');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting category');
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

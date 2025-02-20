@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment Dashboard - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="window.location.href='{{ url_for('dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Recruitment Management</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="recruitment-dashboard-content">
+            <div class="action-buttons">
+                <button onclick="window.location.href='{{ url_for('add_candidate') }}'" class="primary-btn">
+                    <span class="material-symbols-outlined">person_add</span>
+                    Add Candidate
+                </button>
+                <button onclick="showUploadModal()" class="secondary-btn">
+                    <span class="material-symbols-outlined">upload_file</span>
+                    Upload Excel
+                </button>
+                <button onclick="window.location.href='{{ url_for('export_candidates') }}'" class="secondary-btn">
+                    <span class="material-symbols-outlined">download</span>
+                    Export List
+                </button>
+            </div>
+
+            <!-- Upload Excel Modal -->
+            <div id="upload-form" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="hideUploadModal()">&times;</span>
+                    <h2>Upload Candidates Data</h2>
+                    <form id="excel-upload-form" action="{{ url_for('upload_candidates') }}" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label>Select Excel File:</label>
+                            <input type="file" name="file" accept=".xlsx,.xls" required>
+                            <small class="text-muted">Only Excel files (.xlsx, .xls) are allowed</small>
+                        </div>
+                        <div class="format-info">
+                            <h3>Excel Format:</h3>
+                            <p>Please use the following columns:</p>
+                            <ul>
+                                <li>name (text) - Full name of the candidate</li>
+                                <li>email (text) - Email address</li>
+                                <li>phone (text) - Contact number</li>
+                                <li>role_applied (text) - Position applied for</li>
+                                <li>experience (number) - Years of experience</li>
+                                <li>source (text) - Source of application (e.g., LinkedIn, Job Portal, Referral)</li>
+                            </ul>
+                            <a href="{{ url_for('download_candidate_template') }}" class="template-link">
+                                <span class="material-symbols-outlined">download</span>
+                                Download Template
+                            </a>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" onclick="hideUploadModal()" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Candidate List -->
+            <div class="candidate-grid">
+                {% for candidate in candidates %}
+                <div class="candidate-card">
+                    <div class="candidate-info">
+                        <h3>{{ candidate.name }}</h3>
+                        <p class="position">Position: {{ candidate.role_applied }}</p>
+                        <p class="experience">Experience: {{ "%.1f"|format(candidate.experience) }} years</p>
+                        <p class="contact">
+                            <span class="email">{{ candidate.email }}</span>
+                            <span class="phone">{{ candidate.phone }}</span>
+                        </p>
+                        <p class="status">Status: <span class="status-badge {{ candidate.status.lower() }}">{{ candidate.status }}</span></p>
+                        <p class="date">Applied: {{ candidate.created_date.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                    <div class="candidate-actions">
+                        {% if candidate.resume_path %}
+                        <button onclick="viewResume('{{ candidate.id }}')" class="icon-btn view-resume-btn" data-candidate-id="{{ candidate.id }}">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                        {% endif %}
+                        <button onclick="editCandidate('{{ candidate.id }}')" class="action-btn edit-btn">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button onclick="confirmDelete('{{ candidate.id }}', '{{ candidate.name }}')" class="action-btn delete-btn">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Edit Candidate Modal -->
+            <div id="edit-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="hideEditModal()">&times;</span>
+                    <h2>Edit Candidate</h2>
+                    <form id="edit-form" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="edit-name">Name</label>
+                            <input type="text" id="edit-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-email">Email</label>
+                            <input type="email" id="edit-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-phone">Phone</label>
+                            <input type="tel" id="edit-phone" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-position">Position</label>
+                            <input type="text" id="edit-position" name="position" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-status">Status</label>
+                            <select id="edit-status" name="status" required>
+                                <option value="Applied">Applied</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Selected">Selected</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-resume">Update Resume (optional)</label>
+                            <input type="file" id="edit-resume" name="resume" accept=".pdf,.doc,.docx">
+                            <p class="file-info" id="current-resume-info"></p>
+                        </div>
+                        <button type="submit" class="primary-btn">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Resume Preview Modal -->
+            <div id="resume-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="hideResumeModal()">&times;</span>
+                    <h2>Resume Preview</h2>
+                    <div id="resume-preview"></div>
+                </div>
+            </div>
+
+            <script>
+                function editCandidate(candidateId) {
+                    fetch(`/get-candidate/${candidateId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('edit-name').value = data.name;
+                            document.getElementById('edit-email').value = data.email;
+                            document.getElementById('edit-phone').value = data.phone;
+                            document.getElementById('edit-position').value = data.position;
+                            document.getElementById('edit-status').value = data.status;
+                            const resumeInfo = document.getElementById('current-resume-info');
+                            if (data.has_resume) {
+                                resumeInfo.textContent = 'Current resume is uploaded. Upload new file to replace it.';
+                            } else {
+                                resumeInfo.textContent = 'No resume currently uploaded.';
+                            }
+                            document.getElementById('edit-form').action = `/update-candidate/${candidateId}`;
+                            document.getElementById('edit-modal').style.display = 'block';
+                        });
+                }
+
+                function hideEditModal() {
+                    document.getElementById('edit-modal').style.display = 'none';
+                }
+
+                function viewResume(candidateId) {
+                    // Open resume in a new tab/window
+                    window.open(`/get-resume/${candidateId}`, '_blank');
+                }
+
+                function hideResumeModal() {
+                    document.getElementById('resume-modal').style.display = 'none';
+                }
+
+                function confirmDelete(candidateId, candidateName) {
+                    if (confirm(`Are you sure you want to delete ${candidateName}?`)) {
+                        fetch(`/delete-candidate/${candidateId}`, {
+                            method: 'POST'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            }
+                        });
+                    }
+                }
+
+                document.querySelectorAll('.view-resume-btn').forEach(btn => {
+                    btn.onclick = function(e) {
+                        e.preventDefault();
+                        const candidateId = this.dataset.candidateId;
+                        viewResume(candidateId);
+                    };
+                });
+
+                function showUploadModal() {
+                    document.getElementById('upload-form').style.display = 'block';
+                }
+
+                function hideUploadModal() {
+                    document.getElementById('upload-form').style.display = 'none';
+                }
+
+                // Close modal when clicking outside
+                window.onclick = function(event) {
+                    const modal = document.getElementById('upload-form');
+                    if (event.target == modal) {
+                        hideUploadModal();
+                    }
+                }
+
+                // Handle form submission
+                document.getElementById('excel-upload-form').onsubmit = function(e) {
+                    const fileInput = this.querySelector('input[type="file"]');
+                    if (!fileInput.files.length) {
+                        e.preventDefault();
+                        alert('Please select a file to upload');
+                        return false;
+                    }
+                    return true;
+                }
+            </script>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .format-info {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .format-info h3 {
+            margin: 0 0 1rem;
+            color: #333;
+        }
+
+        .format-info ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .template-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4a90e2;
+            text-decoration: none;
+            margin-top: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-primary {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</body>
+</html> 

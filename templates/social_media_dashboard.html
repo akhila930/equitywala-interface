@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Management - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="window.location.href='{{ url_for('dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Social Media Management</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="social-dashboard-content">
+            <!-- Campaign Management Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Campaign Management</h2>
+                    <button onclick="showAddCampaignModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        New Campaign
+                    </button>
+                </div>
+
+                <div class="filter-bar">
+                    <select id="campaign-filter" onchange="filterCampaigns()">
+                        <option value="all">All Campaigns</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="over-budget">Over Budget</option>
+                    </select>
+                </div>
+
+                <div class="campaign-grid">
+                    {% for campaign in campaigns %}
+                    <div class="campaign-card" data-status="{{ campaign.status }}" 
+                         data-budget-status="{{ 'over-budget' if campaign.amount_spent > campaign.budget else 'within-budget' }}">
+                        <div class="campaign-info">
+                            <h3>{{ campaign.name }}</h3>
+                            <p class="budget">Budget: ₹{{ "%.2f"|format(campaign.budget) }}</p>
+                            <p class="spent">Spent: ₹{{ "%.2f"|format(campaign.amount_spent) }}</p>
+                            <p class="roi">ROI: {{ "%.1f"|format((campaign.amount_spent/campaign.budget)*100) if campaign.budget > 0 else 0 }}%</p>
+                            <p class="dates">
+                                {{ campaign.start_date.strftime('%Y-%m-%d') }} to 
+                                {{ campaign.end_date.strftime('%Y-%m-%d') }}
+                            </p>
+                        </div>
+                        <div class="campaign-actions">
+                            <button onclick="editCampaign('{{ campaign.id }}')" class="action-btn edit-btn">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button onclick="deleteCampaign('{{ campaign.id }}')" class="action-btn delete-btn">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Post Scheduler Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Post Scheduler</h2>
+                    <button onclick="showAddPostModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">post_add</span>
+                        Schedule Post
+                    </button>
+                </div>
+
+                <div class="scheduled-posts">
+                    {% for post in scheduled_posts %}
+                    <div class="post-card">
+                        <div class="post-preview">
+                            <p class="post-content">{{ post.content }}</p>
+                            <div class="post-preview-section">
+                                <h4>Post Preview:</h4>
+                                <div class="social-preview">
+                                    {% for platform in post.platforms.split(',') %}
+                                    <div class="platform-preview">
+                                        <h5>{{ platform }}</h5>
+                                        <div class="preview-frame">
+                                            <div class="preview-header">
+                                                <span class="platform-icon">{{ platform }}</span>
+                                                <span class="company-name">Your Company</span>
+                                            </div>
+                                            <div class="preview-content">
+                                                {{ post.content }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="post-platforms">
+                                {% for platform in post.platforms.split(',') %}
+                                <span class="platform-badge">{{ platform }}</span>
+                                {% endfor %}
+                            </div>
+                            <p class="schedule-time">
+                                Scheduled for: {{ post.scheduled_time.strftime('%Y-%m-%d %H:%M') }}
+                            </p>
+                        </div>
+                        <div class="post-actions">
+                            <button onclick="editPost('{{ post.id }}')" class="action-btn edit-btn">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button onclick="deletePost('{{ post.id }}')" class="action-btn delete-btn">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Campaign Modal -->
+        <div id="add-campaign-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddCampaignModal()">&times;</span>
+                <h2>Add New Campaign</h2>
+                <form id="campaign-form" method="POST" action="{{ url_for('add_campaign') }}">
+                    <div class="form-group">
+                        <label for="campaign-name">Campaign Name</label>
+                        <input type="text" id="campaign-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaign-budget">Budget (₹)</label>
+                        <input type="number" id="campaign-budget" name="budget" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaign-spend">Amount Spent (₹)</label>
+                        <input type="number" id="campaign-spend" name="amount_spent" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date" name="end_date" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Create Campaign</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Post Modal -->
+        <div id="add-post-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddPostModal()">&times;</span>
+                <h2>Schedule New Post</h2>
+                <form action="{{ url_for('add_post') }}" method="POST">
+                    <div class="form-group">
+                        <label for="post_campaign">Campaign</label>
+                        <select id="post_campaign" name="campaign_id" required>
+                            {% for campaign in campaigns %}
+                            <option value="{{ campaign.id }}">{{ campaign.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="post_content">Post Content</label>
+                        <textarea id="post_content" name="content" required onkeyup="updatePreview()"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="post_platforms">Platforms</label>
+                        <div class="platform-checkboxes">
+                            <label><input type="checkbox" name="platforms" value="Facebook"> Facebook</label>
+                            <label><input type="checkbox" name="platforms" value="Twitter"> Twitter</label>
+                            <label><input type="checkbox" name="platforms" value="Instagram"> Instagram</label>
+                            <label><input type="checkbox" name="platforms" value="LinkedIn"> LinkedIn</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="post_schedule">Schedule Date</label>
+                        <input type="datetime-local" id="post_schedule" name="scheduled_time" required>
+                    </div>
+                    <div class="preview-section">
+                        <h4>Post Preview:</h4>
+                        <div id="post-preview"></div>
+                    </div>
+                    <button type="submit" class="primary-btn">Schedule Post</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Post Modal -->
+        <div id="edit-post-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideEditPostModal()">&times;</span>
+                <h2>Edit Scheduled Post</h2>
+                <form id="edit-post-form" method="POST">
+                    <div class="form-group">
+                        <label for="edit-post-content">Content</label>
+                        <textarea id="edit-post-content" name="content" required onkeyup="updateEditPreview()"></textarea>
+                        <div class="post-preview-container">
+                            <h4>Preview:</h4>
+                            <div id="edit-post-preview-box" class="post-preview-box"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Platforms</label>
+                        <div class="platform-checkboxes">
+                            <label><input type="checkbox" name="platforms" value="Facebook" onchange="updateEditPreview()"> Facebook</label>
+                            <label><input type="checkbox" name="platforms" value="Instagram" onchange="updateEditPreview()"> Instagram</label>
+                            <label><input type="checkbox" name="platforms" value="LinkedIn" onchange="updateEditPreview()"> LinkedIn</label>
+                            <label><input type="checkbox" name="platforms" value="Twitter" onchange="updateEditPreview()"> Twitter</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-schedule-time">Schedule Time</label>
+                        <input type="datetime-local" id="edit-schedule-time" name="scheduled_time" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Update Post</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Campaign Modal -->
+        <div id="edit-campaign-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideEditCampaignModal()">&times;</span>
+                <h2>Edit Campaign</h2>
+                <form id="edit-campaign-form" method="POST">
+                    <div class="form-group">
+                        <label for="edit-campaign-name">Campaign Name</label>
+                        <input type="text" id="edit-campaign-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-campaign-budget">Budget</label>
+                        <input type="number" id="edit-campaign-budget" name="budget" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-campaign-spent">Amount Spent</label>
+                        <input type="number" id="edit-campaign-spent" name="amount_spent" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-campaign-start">Start Date</label>
+                        <input type="date" id="edit-campaign-start" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-campaign-end">End Date</label>
+                        <input type="date" id="edit-campaign-end" name="end_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-campaign-status">Status</label>
+                        <select id="edit-campaign-status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="paused">Paused</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn">Update Campaign</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showAddCampaignModal() {
+            document.getElementById('add-campaign-modal').style.display = 'block';
+        }
+
+        function hideAddCampaignModal() {
+            document.getElementById('add-campaign-modal').style.display = 'none';
+        }
+
+        function showAddPostModal() {
+            document.getElementById('add-post-modal').style.display = 'block';
+        }
+
+        function hideAddPostModal() {
+            document.getElementById('add-post-modal').style.display = 'none';
+        }
+
+        function editCampaign(campaignId) {
+            fetch(`/get-campaign/${campaignId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('edit-campaign-name').value = data.name;
+                    document.getElementById('edit-campaign-budget').value = data.budget;
+                    document.getElementById('edit-campaign-spent').value = data.amount_spent;
+                    document.getElementById('edit-campaign-start').value = data.start_date;
+                    document.getElementById('edit-campaign-end').value = data.end_date;
+                    document.getElementById('edit-campaign-status').value = data.status;
+                    
+                    document.getElementById('edit-campaign-form').action = `/update-campaign/${campaignId}`;
+                    document.getElementById('edit-campaign-modal').style.display = 'block';
+                });
+        }
+
+        function hideEditCampaignModal() {
+            document.getElementById('edit-campaign-modal').style.display = 'none';
+        }
+
+        function deleteCampaign(campaignId) {
+            if (confirm('Are you sure you want to delete this campaign?')) {
+                fetch(`/delete-campaign/${campaignId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting campaign');
+                    }
+                });
+            }
+        }
+
+        function filterCampaigns() {
+            const filter = document.getElementById('campaign-filter').value;
+            const campaigns = document.querySelectorAll('.campaign-card');
+            
+            campaigns.forEach(campaign => {
+                if (filter === 'all' || 
+                    campaign.dataset.status === filter ||
+                    campaign.dataset.budgetStatus === filter) {
+                    campaign.style.display = 'flex';
+                } else {
+                    campaign.style.display = 'none';
+                }
+            });
+        }
+
+        function hideEditPostModal() {
+            document.getElementById('edit-post-modal').style.display = 'none';
+        }
+
+        function editPost(postId) {
+            fetch(`/get-post/${postId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('edit-post-content').value = data.content;
+                    document.getElementById('edit-schedule-time').value = data.scheduled_time;
+                    
+                    // Set platforms
+                    const platforms = data.platforms.split(',');
+                    const checkboxes = document.querySelectorAll('#edit-post-modal input[name="platforms"]');
+                    checkboxes.forEach(cb => {
+                        cb.checked = platforms.includes(cb.value);
+                    });
+                    
+                    document.getElementById('edit-post-form').action = `/update-post/${postId}`;
+                    updateEditPreview();
+                    document.getElementById('edit-post-modal').style.display = 'block';
+                });
+        }
+
+        function deletePost(postId) {
+            if (confirm('Are you sure you want to delete this post?')) {
+                fetch(`/delete-post/${postId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting post');
+                    }
+                });
+            }
+        }
+
+        function updatePreview() {
+            const content = document.getElementById('post_content').value;
+            const preview = document.getElementById('post-preview');
+            const platforms = Array.from(document.querySelectorAll('#add-post-modal input[name="platforms"]:checked'))
+                .map(input => input.value);
+            
+            preview.innerHTML = `
+                <div class="preview-post">
+                    <p>${content}</p>
+                    <div class="preview-platforms">
+                        ${platforms.map(p => `<span class="platform-badge">${p}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateEditPreview() {
+            const content = document.getElementById('edit-post-content').value;
+            const preview = document.getElementById('edit-post-preview-box');
+            const platforms = Array.from(document.querySelectorAll('#edit-post-modal input[name="platforms"]:checked'))
+                .map(input => input.value);
+            
+            preview.innerHTML = `
+                <div class="preview-post">
+                    <p>${content}</p>
+                    <div class="preview-platforms">
+                        ${platforms.map(p => `<span class="platform-badge">${p}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

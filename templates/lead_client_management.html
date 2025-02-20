@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead & Client Management - Equitywala</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.css" rel="stylesheet">
+    <style>
+        .pipeline {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .pipeline-column {
+            flex: 1;
+            min-width: 300px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .pipeline-column h3 {
+            margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .lead-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: move;
+        }
+        
+        .client-card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .client-card .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .client-sections {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .client-section {
+            flex: 1;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .interaction-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .document-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .feedback-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .tab-btn.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        .lead-info, .client-info {
+            margin: 8px 0;
+            font-size: 0.85em;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+
+        .lead-info small, .client-info small {
+            display: inline-block;
+            margin: 2px 0;
+        }
+        
+        .lead-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .client-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+
+        .client-status.active {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .client-status.inactive {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .services-section {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .service-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .status-select.pending {
+            background-color: #ffc107;
+        }
+
+        .status-select.in_progress {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .status-select.completed {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-select.cancelled {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .service-documents, .service-interactions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .document-actions .action-btn {
+            padding: 4px;
+            font-size: 0.9em;
+        }
+
+        .interaction-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .interaction-item span {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .interaction-item p {
+            margin-top: 5px;
+        }
+
+        .document-info {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .document-name {
+            font-weight: 500;
+        }
+
+        .document-type {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .document-date {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        .interaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .interaction-info {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .interaction-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .interaction-type {
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .interaction-summary {
+            margin: 8px 0;
+            color: #333;
+        }
+
+        .interaction-followup {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-header h6 {
+            margin: 0;
+            font-size: 1em;
+            color: #444;
+        }
+
+        .document-actions, .interaction-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.2s;
+        }
+
+        .action-btn:hover {
+            color: #007bff;
+        }
+
+        .action-btn span {
+            font-size: 18px;
+        }
+
+        .service-documents {
+            margin-top: 20px;
+        }
+
+        .service-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .documents-list {
+            margin-top: 15px;
+        }
+
+        .documents-table {
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+
+        .documents-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .documents-table th,
+        .documents-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .documents-table th {
+            background-color: #f5f5f5;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 3px 8px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button onclick="window.location.href='{{ url_for('dashboard') }}'" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Back to Dashboard
+                </button>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Equitywala Logo" class="nav-logo">
+                <h1>Lead & Client Management</h1>
+            </div>
+            <div class="nav-right">
+                <div class="dropdown">
+                    <button class="dropbtn">{{ user_name }} ▼</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="dashboard-content">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('leads')">Lead Pipeline</button>
+                <button class="tab-btn" onclick="showTab('clients')">Client Management</button>
+            </div>
+
+            <!-- Lead Pipeline Tab -->
+            <div id="leads-tab" class="tab-content active">
+                <div class="action-buttons">
+                    <button onclick="showAddLeadModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">person_add</span>
+                        Add Lead
+                    </button>
+                    <button onclick="showUploadLeadModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">upload_file</span>
+                        Upload Excel
+                    </button>
+                    <a href="{{ url_for('download_lead_template') }}" class="secondary-btn">
+                        <span class="material-symbols-outlined">download</span>
+                        Download Template
+                    </a>
+                </div>
+
+                <div class="pipeline">
+                    <div class="pipeline-column" id="new-leads">
+                        <h3>New Leads</h3>
+                        {% for lead in leads if lead.status == 'new' %}
+                        <div class="lead-card" data-id="{{ lead.id }}">
+                            <h4>{{ lead.name }}</h4>
+                            <p>{{ lead.email }}</p>
+                            <p>Source: {{ lead.source }}</p>
+                            <p>Score: {{ lead.score }}</p>
+                            {% if lead.employee %}
+                            <p><small>Assigned to: {{ lead.employee.name }}</small></p>
+                            {% endif %}
+                            <div class="lead-info">
+                                <small>Added: {{ lead.created_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <br>
+                                <small>Last Updated: {{ lead.updated_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <div class="lead-actions">
+                                <button onclick="editLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+                                <button onclick="deleteLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="pipeline-column" id="contacted-leads">
+                        <h3>Contacted</h3>
+                        {% for lead in leads if lead.status == 'contacted' %}
+                        <div class="lead-card" data-id="{{ lead.id }}">
+                            <h4>{{ lead.name }}</h4>
+                            <p>{{ lead.email }}</p>
+                            <p>Source: {{ lead.source }}</p>
+                            <p>Score: {{ lead.score }}</p>
+                            {% if lead.employee %}
+                            <p><small>Assigned to: {{ lead.employee.name }}</small></p>
+                            {% endif %}
+                            <div class="lead-info">
+                                <small>Added: {{ lead.created_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <br>
+                                <small>Last Updated: {{ lead.updated_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <div class="lead-actions">
+                                <button onclick="editLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+                                <button onclick="deleteLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="pipeline-column" id="negotiating-leads">
+                        <h3>Negotiating</h3>
+                        {% for lead in leads if lead.status == 'negotiating' %}
+                        <div class="lead-card" data-id="{{ lead.id }}">
+                            <h4>{{ lead.name }}</h4>
+                            <p>{{ lead.email }}</p>
+                            <p>Source: {{ lead.source }}</p>
+                            <p>Score: {{ lead.score }}</p>
+                            {% if lead.employee %}
+                            <p><small>Assigned to: {{ lead.employee.name }}</small></p>
+                            {% endif %}
+                            <div class="lead-info">
+                                <small>Added: {{ lead.created_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <br>
+                                <small>Last Updated: {{ lead.updated_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <div class="lead-actions">
+                                <button onclick="editLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+                                <button onclick="deleteLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="pipeline-column" id="closed-leads">
+                        <h3>Closed</h3>
+                        {% for lead in leads if lead.status == 'closed' %}
+                        <div class="lead-card" data-id="{{ lead.id }}">
+                            <h4>{{ lead.name }}</h4>
+                            <p>{{ lead.email }}</p>
+                            <p>Source: {{ lead.source }}</p>
+                            <p>Score: {{ lead.score }}</p>
+                            {% if lead.employee %}
+                            <p><small>Assigned to: {{ lead.employee.name }}</small></p>
+                            {% endif %}
+                            <div class="lead-info">
+                                <small>Added: {{ lead.created_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <br>
+                                <small>Last Updated: {{ lead.updated_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <div class="lead-actions">
+                                <button onclick="editLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+                                <button onclick="deleteLead('{{ lead.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Management Tab -->
+            <div id="clients-tab" class="tab-content">
+                <div class="action-buttons">
+                    <button onclick="showAddClientModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">group_add</span>
+                        Add Client
+                    </button>
+                    <button onclick="showUploadClientModal()" class="primary-btn">
+                        <span class="material-symbols-outlined">upload_file</span>
+                        Upload Excel
+                    </button>
+                    <a href="{{ url_for('download_client_template') }}" class="secondary-btn">
+                        <span class="material-symbols-outlined">download</span>
+                        Download Template
+                    </a>
+                </div>
+
+                <div class="client-grid">
+                    {% for client in clients %}
+                    <div class="client-card">
+                        <div class="client-header">
+                            <h3>{{ client.name }}</h3>
+                            <div class="client-actions">
+                                <button onclick="editClient('{{ client.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+                                <button onclick="deleteClient('{{ client.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                                <button onclick="generateReport('{{ client.id }}')" class="action-btn">
+                                    <span class="material-symbols-outlined">description</span>
+                                </button>
+                            </div>
+                        </div>
+                        <p>{{ client.company }}</p>
+                        <p>{{ client.email }}</p>
+                        <p>{{ client.phone }}</p>
+                        {% if client.employee %}
+                        <p><small>Assigned to: {{ client.employee.name }}</small></p>
+                        {% endif %}
+                        <p class="client-status {{ client.status }}">Status: {{ client.status|title }}</p>
+                        <div class="client-info">
+                            <small>Added: {{ client.created_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            <br>
+                            <small>Last Updated: {{ client.updated_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+
+                        <!-- Services Section -->
+                        <div class="services-section">
+                            <div class="section-header">
+                                <h4>Services</h4>
+                                <button onclick="showAddServiceModal('{{ client.id }}')" class="secondary-btn">
+                                    <span class="material-symbols-outlined">add</span>
+                                    Add Service
+                                </button>
+                            </div>
+                            
+                            {% for service in client.services %}
+                            <div class="service-card">
+                                <div class="service-header">
+                                    <h5>{{ service.name }}</h5>
+                                    <select onchange="updateServiceStatus('{{ service.id }}', this.value)" class="status-select {{ service.status }}">
+                                        <option value="pending" {% if service.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="in_progress" {% if service.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="completed" {% if service.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        <option value="cancelled" {% if service.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                </div>
+                                <p>{{ service.description }}</p>
+                                
+                                <!-- Service Documents -->
+                                <div class="service-documents">
+                                    <div class="section-header">
+                                        <h6>Documents</h6>
+                                        <button onclick="showUploadDocumentModal('{{ client.id }}', '{{ service.id }}')" class="secondary-btn">
+                                            <span class="material-symbols-outlined">upload_file</span>
+                                            Upload
+                                        </button>
+                                    </div>
+                                    <div class="document-list">
+                                        {% for doc in service.documents %}
+                                        <div class="document-item">
+                                            <div class="document-info">
+                                                <span class="document-name">{{ doc.name }}</span>
+                                                <span class="document-type">({{ doc.document_type }})</span>
+                                                <span class="document-date">{{ doc.upload_date.strftime('%Y-%m-%d') }}</span>
+                                            </div>
+                                            <div class="document-actions">
+                                                <button onclick="downloadServiceDocument('{{ doc.id }}')" class="action-btn" title="Download">
+                                                    <span class="material-symbols-outlined">download</span>
+                                                </button>
+                                                <button onclick="deleteServiceDocument('{{ doc.id }}')" class="action-btn" title="Delete">
+                                                    <span class="material-symbols-outlined">delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Service Interactions -->
+                                <div class="service-interactions">
+                                    <div class="section-header">
+                                        <h6>Interactions</h6>
+                                        <button onclick="showAddInteractionModal('{{ client.id }}', '{{ service.id }}')" class="secondary-btn">
+                                            <span class="material-symbols-outlined">add_comment</span>
+                                            Add
+                                        </button>
+                                    </div>
+                                    <div class="interaction-list">
+                                        {% for interaction in service.interactions %}
+                                        <div class="interaction-item" 
+                                             data-interaction-id="{{ interaction.id }}"
+                                             data-type="{{ interaction.interaction_type }}"
+                                             data-summary="{{ interaction.summary }}"
+                                             data-date="{{ interaction.interaction_date.strftime('%Y-%m-%d') }}"
+                                             {% if interaction.next_followup_date %}
+                                             data-followup="{{ interaction.next_followup_date.strftime('%Y-%m-%d') }}"
+                                             {% endif %}>
+                                            <div class="interaction-header">
+                                                <div class="interaction-info">
+                                                    <span class="interaction-date">{{ interaction.interaction_date.strftime('%Y-%m-%d') }}</span>
+                                                    <span class="interaction-type">{{ interaction.interaction_type }}</span>
+                                                </div>
+                                                <div class="interaction-actions">
+                                                    <button onclick="showAddInteractionModal('{{ client.id }}', '{{ service.id }}', '{{ interaction.id }}')" class="action-btn" title="Edit">
+                                                        <span class="material-symbols-outlined">edit</span>
+                                                    </button>
+                                                    <button onclick="deleteServiceInteraction('{{ interaction.id }}')" class="action-btn" title="Delete">
+                                                        <span class="material-symbols-outlined">delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p class="interaction-summary">{{ interaction.summary }}</p>
+                                            {% if interaction.next_followup_date %}
+                                            <small class="interaction-followup">Next Follow-up: {{ interaction.next_followup_date.strftime('%Y-%m-%d') }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Lead Modal -->
+        <div id="add-lead-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddLeadModal()">&times;</span>
+                <h2>Add New Lead</h2>
+                <form id="add-lead-form" onsubmit="submitLead(event)">
+                    <div class="form-group">
+                        <label for="lead-name">Name</label>
+                        <input type="text" id="lead-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-email">Email</label>
+                        <input type="email" id="lead-email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-phone">Phone</label>
+                        <input type="tel" id="lead-phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-source">Source</label>
+                        <select id="lead-source" name="source" required>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-assigned">Assign To</label>
+                        <select id="lead-assigned" name="assigned_to">
+                            <option value="">Select Employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-notes">Notes</label>
+                        <textarea id="lead-notes" name="notes"></textarea>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Lead</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Lead Modal -->
+        <div id="edit-lead-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideEditLeadModal()">&times;</span>
+                <h2>Edit Lead</h2>
+                <form id="edit-lead-form" onsubmit="submitEditLead(event)">
+                    <input type="hidden" id="edit-lead-id" name="lead_id">
+                    <div class="form-group">
+                        <label for="edit-lead-name">Name</label>
+                        <input type="text" id="edit-lead-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-email">Email</label>
+                        <input type="email" id="edit-lead-email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-phone">Phone</label>
+                        <input type="tel" id="edit-lead-phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-source">Source</label>
+                        <select id="edit-lead-source" name="source" required>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-status">Status</label>
+                        <select id="edit-lead-status" name="status" required>
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="negotiating">Negotiating</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-assigned">Assign To</label>
+                        <select id="edit-lead-assigned" name="assigned_to" required>
+                            <option value="">Select Employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lead-notes">Notes</label>
+                        <textarea id="edit-lead-notes" name="notes"></textarea>
+                    </div>
+                    <button type="submit" class="primary-btn">Update Lead</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Client Modal -->
+        <div id="add-client-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddClientModal()">&times;</span>
+                <h2>Add New Client</h2>
+                <form id="add-client-form" onsubmit="submitClient(event)">
+                    <div class="form-group">
+                        <label for="client-name">Name</label>
+                        <input type="text" id="client-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-email">Email</label>
+                        <input type="email" id="client-email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="client-phone">Phone</label>
+                        <input type="tel" id="client-phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="client-company">Company</label>
+                        <input type="text" id="client-company" name="company">
+                    </div>
+                    <div class="form-group">
+                        <label for="client-address">Address</label>
+                        <textarea id="client-address" name="address"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-assigned">Assign To</label>
+                        <select id="client-assigned" name="assigned_to">
+                            <option value="">Select Employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Client</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add/Edit Interaction Modal -->
+        <div id="add-interaction-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddInteractionModal()">&times;</span>
+                <h2 id="interaction-modal-title">Add Interaction</h2>
+                <form id="add-interaction-form" onsubmit="submitInteraction(event)">
+                    <input type="hidden" id="interaction-client-id" name="client_id">
+                    <input type="hidden" id="interaction-service-id" name="service_id">
+                    <input type="hidden" id="interaction-id" name="interaction_id">
+                    <div class="form-group">
+                        <label for="interaction-type">Type</label>
+                        <select id="interaction-type" name="interaction_type" required>
+                            <option value="meeting">Meeting</option>
+                            <option value="call">Call</option>
+                            <option value="email">Email</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="interaction-summary">Summary</label>
+                        <textarea id="interaction-summary" name="summary" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="interaction-date">Date</label>
+                        <input type="date" id="interaction-date" name="interaction_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="next-followup">Next Follow-up Date</label>
+                        <input type="date" id="next-followup" name="next_followup_date">
+                    </div>
+                    <button type="submit" class="primary-btn">Save Interaction</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Document Modal -->
+        <div id="upload-document-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideUploadDocumentModal()">&times;</span>
+                <h2>Upload Document</h2>
+                <form id="upload-document-form" onsubmit="submitDocument(event)" enctype="multipart/form-data">
+                    <input type="hidden" id="document-client-id" name="client_id">
+                    <input type="hidden" id="document-service-id" name="service_id">
+                    <div class="form-group">
+                        <label for="document-name">Document Name</label>
+                        <input type="text" id="document-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="document-type">Type</label>
+                        <select id="document-type" name="document_type" required>
+                            <option value="contract">Contract</option>
+                            <option value="invoice">Invoice</option>
+                            <option value="proposal">Proposal</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="document-file">File</label>
+                        <input type="file" id="document-file" name="document" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Upload Document</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Client Modal -->
+        <div id="edit-client-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideEditClientModal()">&times;</span>
+                <h2>Edit Client</h2>
+                <form id="edit-client-form" onsubmit="submitEditClient(event)">
+                    <input type="hidden" id="edit-client-id" name="client_id">
+                    <div class="form-group">
+                        <label for="edit-client-name">Name</label>
+                        <input type="text" id="edit-client-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-email">Email</label>
+                        <input type="email" id="edit-client-email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-phone">Phone</label>
+                        <input type="tel" id="edit-client-phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-company">Company</label>
+                        <input type="text" id="edit-client-company" name="company">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-address">Address</label>
+                        <textarea id="edit-client-address" name="address"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-status">Status</label>
+                        <select id="edit-client-status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-assigned">Assign To</label>
+                        <select id="edit-client-assigned" name="assigned_to" required>
+                            <option value="">Select Employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn">Update Client</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Service Modal -->
+        <div id="add-service-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideAddServiceModal()">&times;</span>
+                <h2>Add Service</h2>
+                <form id="add-service-form" onsubmit="submitService(event)">
+                    <input type="hidden" id="service-client-id" name="client_id">
+                    <div class="form-group">
+                        <label for="service-name">Service Name</label>
+                        <input type="text" id="service-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="service-description">Description</label>
+                        <textarea id="service-description" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="service-status">Status</label>
+                        <select id="service-status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Service</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Lead Modal -->
+        <div id="upload-lead-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideUploadLeadModal()">&times;</span>
+                <h2>Upload Leads</h2>
+                <form action="{{ url_for('upload_leads') }}" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="lead-file">Select Excel File</label>
+                        <input type="file" id="lead-file" name="file" accept=".xlsx" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Upload</button>
+                        <button type="button" onclick="hideUploadLeadModal()" class="secondary-btn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Client Modal -->
+        <div id="upload-client-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="hideUploadClientModal()">&times;</span>
+                <h2>Upload Clients</h2>
+                <form action="{{ url_for('upload_clients') }}" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="client-file">Select Excel File</label>
+                        <input type="file" id="client-file" name="file" accept=".xlsx" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Upload</button>
+                        <button type="button" onclick="hideUploadClientModal()" class="secondary-btn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
+    <script>
+        // Initialize dragula for lead pipeline
+        dragula([
+            document.getElementById('new-leads'),
+            document.getElementById('contacted-leads'),
+            document.getElementById('negotiating-leads'),
+            document.getElementById('closed-leads')
+        ]).on('drop', function(el, target, source) {
+            const leadId = el.dataset.id;
+            const newStatus = target.id.replace('-leads', '');
+            
+            // Update lead status
+            fetch(`/update-lead/${leadId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'status': newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert the drag if update failed
+                    source.appendChild(el);
+                    alert('Error updating lead status: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                source.appendChild(el);
+                alert('Error updating lead status');
+            });
+        });
+
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // Modal functions
+        function showAddLeadModal() {
+            document.getElementById('add-lead-modal').style.display = 'block';
+        }
+
+        function hideAddLeadModal() {
+            document.getElementById('add-lead-modal').style.display = 'none';
+        }
+
+        function showAddClientModal() {
+            document.getElementById('add-client-modal').style.display = 'block';
+        }
+
+        function hideAddClientModal() {
+            document.getElementById('add-client-modal').style.display = 'none';
+        }
+
+        function showAddInteractionModal(clientId, serviceId, interactionId = null) {
+            document.getElementById('interaction-modal-title').textContent = interactionId ? 'Edit Interaction' : 'Add Interaction';
+            document.getElementById('interaction-client-id').value = clientId;
+            document.getElementById('interaction-service-id').value = serviceId;
+            document.getElementById('interaction-id').value = interactionId || '';
+            
+            if (interactionId) {
+                // Load existing interaction data
+                const interactionItem = document.querySelector(`[data-interaction-id="${interactionId}"]`);
+                document.getElementById('interaction-type').value = interactionItem.getAttribute('data-type');
+                document.getElementById('interaction-summary').value = interactionItem.getAttribute('data-summary');
+                document.getElementById('interaction-date').value = interactionItem.getAttribute('data-date');
+                document.getElementById('next-followup').value = interactionItem.getAttribute('data-followup') || '';
+            } else {
+                // Clear form for new interaction
+                document.getElementById('add-interaction-form').reset();
+            }
+            
+            document.getElementById('add-interaction-modal').style.display = 'block';
+        }
+
+        function hideAddInteractionModal() {
+            document.getElementById('add-interaction-modal').style.display = 'none';
+        }
+
+        function showUploadDocumentModal(clientId, serviceId) {
+            document.getElementById('document-client-id').value = clientId;
+            document.getElementById('document-service-id').value = serviceId;
+            document.getElementById('upload-document-modal').style.display = 'block';
+        }
+
+        function hideUploadDocumentModal() {
+            document.getElementById('upload-document-modal').style.display = 'none';
+        }
+
+        function showEditLeadModal() {
+            document.getElementById('edit-lead-modal').style.display = 'block';
+        }
+
+        function hideEditLeadModal() {
+            document.getElementById('edit-lead-modal').style.display = 'none';
+        }
+
+        function showEditClientModal() {
+            document.getElementById('edit-client-modal').style.display = 'block';
+        }
+
+        function hideEditClientModal() {
+            document.getElementById('edit-client-modal').style.display = 'none';
+        }
+
+        function showAddServiceModal(clientId) {
+            document.getElementById('service-client-id').value = clientId;
+            document.getElementById('add-service-modal').style.display = 'block';
+        }
+
+        function hideAddServiceModal() {
+            document.getElementById('add-service-modal').style.display = 'none';
+        }
+
+        function showUploadLeadModal() {
+            document.getElementById('upload-lead-modal').style.display = 'block';
+        }
+
+        function hideUploadLeadModal() {
+            document.getElementById('upload-lead-modal').style.display = 'none';
+        }
+
+        function showUploadClientModal() {
+            document.getElementById('upload-client-modal').style.display = 'block';
+        }
+
+        function hideUploadClientModal() {
+            document.getElementById('upload-client-modal').style.display = 'none';
+        }
+
+        // Form submission functions
+        function submitLead(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            fetch('/add-lead', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    hideAddLeadModal();
+                    location.reload();
+                } else {
+                    alert('Error adding lead: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding lead');
+            });
+        }
+
+        function submitClient(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            fetch('/add-client', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    hideAddClientModal();
+                    location.reload();
+                } else {
+                    alert('Error adding client: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding client');
+            });
+        }
+
+        function submitInteraction(event) {
+            event.preventDefault();
+            const form = event.target;
+            const serviceId = document.getElementById('interaction-service-id').value;
+            const interactionId = document.getElementById('interaction-id').value;
+            const formData = new FormData(form);
+
+            const url = interactionId ? 
+                `/edit-service-interaction/${interactionId}` : 
+                `/add-service-interaction/${serviceId}`;
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error saving interaction');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving interaction: ' + error.message);
+            });
+        }
+
+        function submitDocument(event) {
+            event.preventDefault();
+            const form = event.target;
+            const serviceId = document.getElementById('document-service-id').value;
+            const formData = new FormData(form);
+
+            fetch(`/upload-service-document/${serviceId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error uploading document: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error uploading document');
+            });
+        }
+
+        function submitEditLead(event) {
+            event.preventDefault();
+            const form = event.target;
+            const leadId = document.getElementById('edit-lead-id').value;
+            const formData = new FormData(form);
+
+            fetch(`/update-lead/${leadId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error updating lead');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating lead: ' + error.message);
+            });
+        }
+
+        function editLead(leadId) {
+            fetch(`/get-lead/${leadId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('edit-lead-id').value = leadId;
+                    document.getElementById('edit-lead-name').value = data.name || '';
+                    document.getElementById('edit-lead-email').value = data.email || '';
+                    document.getElementById('edit-lead-phone').value = data.phone || '';
+                    document.getElementById('edit-lead-source').value = data.source || 'Website';
+                    document.getElementById('edit-lead-status').value = data.status || 'new';
+                    document.getElementById('edit-lead-assigned').value = data.assigned_to || '';
+                    document.getElementById('edit-lead-notes').value = data.notes || '';
+                    showEditLeadModal();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading lead details');
+                });
+        }
+
+        function deleteLead(leadId) {
+            if (!confirm('Are you sure you want to delete this lead?')) {
+                return;
+            }
+            
+            fetch(`/delete-lead/${leadId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error deleting lead');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting lead: ' + error.message);
+            });
+        }
+
+        function editClient(clientId) {
+            fetch(`/get-client/${clientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    document.getElementById('edit-client-id').value = clientId;
+                    document.getElementById('edit-client-name').value = data.name || '';
+                    document.getElementById('edit-client-email').value = data.email || '';
+                    document.getElementById('edit-client-phone').value = data.phone || '';
+                    document.getElementById('edit-client-company').value = data.company || '';
+                    document.getElementById('edit-client-address').value = data.address || '';
+                    document.getElementById('edit-client-status').value = data.status || 'active';
+                    document.getElementById('edit-client-assigned').value = data.assigned_to || '';
+                    showEditClientModal();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading client details: ' + error.message);
+                });
+        }
+
+        function deleteClient(clientId) {
+            if (!confirm('Are you sure you want to delete this client?')) {
+                return;
+            }
+            
+            fetch(`/delete-client/${clientId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error deleting client');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting client: ' + error.message);
+            });
+        }
+
+        function generateReport(clientId) {
+            window.location.href = `/generate-client-report/${clientId}`;
+        }
+
+        function submitEditClient(event) {
+            event.preventDefault();
+            const form = event.target;
+            const clientId = document.getElementById('edit-client-id').value;
+            const formData = new FormData(form);
+
+            fetch(`/update-client/${clientId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error updating client');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating client: ' + error.message);
+            });
+        }
+
+        function submitService(event) {
+            event.preventDefault();
+            const form = event.target;
+            const clientId = document.getElementById('service-client-id').value;
+            const formData = new FormData(form);
+
+            fetch(`/add-client-service/${clientId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error adding service');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding service: ' + error.message);
+            });
+        }
+
+        function updateServiceStatus(serviceId, status) {
+            fetch(`/update-service-status/${serviceId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'status': status
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error updating service status');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating service status: ' + error.message);
+            });
+        }
+
+        function downloadServiceDocument(documentId) {
+            fetch(`/download-service-document/${documentId}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.headers.get('content-type')?.includes('application/json')) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Error downloading document');
+                        });
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '';  // Let the server set the filename
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error downloading document: ' + error.message);
+            });
+        }
+
+        function deleteServiceDocument(documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) {
+                return;
+            }
+            
+            fetch(`/delete-service-document/${documentId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || 'Error deleting document');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting document: ' + error.message);
+            });
+        }
+
+        function deleteServiceInteraction(interactionId) {
+            if (confirm('Are you sure you want to delete this interaction?')) {
+                fetch(`/delete-service-interaction/${interactionId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting interaction: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting interaction');
+                });
+            }
+        }
+
+        function editServiceInteraction(interactionId) {
+            // Get the interaction details and populate the form
+            const interactionItem = document.querySelector(`[data-interaction-id="${interactionId}"]`);
+            const date = interactionItem.querySelector('.interaction-date').textContent;
+            const type = interactionItem.querySelector('.interaction-type').textContent;
+            const summary = interactionItem.querySelector('.interaction-summary').textContent;
+            const followupDate = interactionItem.querySelector('.interaction-followup')?.textContent;
+
+            // Populate the interaction form
+            document.getElementById('interaction-date').value = date;
+            document.getElementById('interaction-type').value = type;
+            document.getElementById('interaction-summary').value = summary;
+            if (followupDate) {
+                document.getElementById('next-followup').value = followupDate;
+            }
+
+            // Show the modal
+            showAddInteractionModal();
+        }
+    </script>
+</body>
+</html>
